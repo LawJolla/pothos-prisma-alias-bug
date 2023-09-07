@@ -24,7 +24,7 @@ prisma.$use((params, next) => {
 const builder = new SchemaBuilder<{
   PrismaTypes: PrismaTypes;
   Scalars: {
-    Date: { Input: Date; Output: Date };
+    DateTime: { Input: Date; Output: Date };
     ID: { Input: string; Output: string | number };
   };
 }>({
@@ -38,7 +38,7 @@ const builder = new SchemaBuilder<{
   plugins: [PrismaPlugin, RelayPlugin, PrismaUtilsPlugin],
 });
 
-builder.addScalarType('Date', DateResolver, {});
+builder.addScalarType('DateTime', DateResolver, {});
 
 builder.queryType({
   fields: (t) => ({
@@ -55,7 +55,7 @@ builder.queryType({
   }),
 });
 
-const DateFilter = builder.prismaFilter('Date', {
+const DateFilter = builder.prismaFilter('DateTime', {
   ops: ['gte', 'lte', 'equals'],
 });
 
@@ -96,10 +96,10 @@ builder.prismaObject('Value', {
     id: t.exposeID('id'),
     value: t.exposeString('value'),
     date: t.expose('date', {
-      type: 'Date',
+      type: 'DateTime',
     }),
     scoreDate: t.field({
-      type: 'Date',
+      type: 'DateTime',
       nullable: true,
       args: {
         filter: t.arg({ type: ValuesScoreFilter }),
