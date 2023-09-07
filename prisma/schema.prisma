@@ -1,8 +1,8 @@
 datasource db {
-  // provider = "postgresql"
-  // url      = env("DATABASE_URL")
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // provider = "sqlite"
+  // url      = "file:./dev.db"
 }
 
 generator client {
@@ -41,4 +41,1909 @@ model Score {
   date    DateTime // @db.Date
   value   Value    @relation(fields: [valueId], references: [id])
   valueId Int
+}
+
+
+model AccountCheck {
+  id                 String              @id @default(cuid()) @db.VarChar(30)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  issuedDate         DateTime?
+  issuedBy           String
+  voidedBy           String?
+  voidDate           DateTime?
+  checkNumber        String
+  amount             Int
+  cachedDate         DateTime?
+  accountId          String?             @map("account") @db.VarChar(30)
+  memo               String?
+  account            DealerAccount?      @relation(fields: [accountId], references: [id], onUpdate: NoAction)
+  accountTransaction AccountTransaction?
+  items              TransactionItem[]
+}
+
+model AccountTransaction {
+  id                  String            @id @default(cuid()) @db.VarChar(30)
+  uniqueTransactionId String            @unique
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  transactionDate     DateTime
+  amount              Int
+  ledgerDescription   String?
+  description         String?
+  chargedBy           String?
+  dealershipId        String?           @map("dealership") @db.VarChar(30)
+  accountId           String?           @map("account") @db.VarChar(30)
+  pending             Boolean           @default(true)
+  checkId             String?           @unique @map("check") @db.VarChar(30)
+  account             DealerAccount?    @relation(fields: [accountId], references: [id], onUpdate: NoAction)
+  check               AccountCheck?     @relation(fields: [checkId], references: [id], onUpdate: NoAction)
+  dealership          Dealership?       @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  dealLineItems       DealLineItem[]
+  items               TransactionItem[]
+}
+
+model Address {
+  id                     String                   @id @default(cuid()) @db.VarChar(30)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  street                 String?
+  city                   String?
+  state                  StateEnum?               @map("state")
+  zip                    String?
+  isCurrent              Boolean                  @default(true)
+  userId                 String?                  @map("user") @db.VarChar(30)
+  vendorId               String?                  @map("vendor") @db.VarChar(30)
+  addressType            AddressTypeEnum[]        @map("addressType")
+  user                   User?                    @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  vendor                 Vendor?                  @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+  DealerLicensePlateUser DealerLicensePlateUser[]
+  DriverLicense          DriverLicense[]
+  VehicleBoughtFrom      VehicleBoughtFrom[]
+  deals                  Deal[]
+}
+
+model Advertising {
+  id              String      @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  facebookId      String?     @unique @map("facebook") @db.VarChar(30)
+  vehicleId       String?     @map("vehicle") @db.VarChar(30)
+  retargetingSale Boolean     @default(false)
+  //  facebookId FacebookAd?  @map("facebook") @relation("Advertising_facebookToFacebookAd", fields: [facebookId], references: [id], onUpdate: NoAction)
+  //  vehicleId  Vehicle?     @map("vehicle") @relation("Advertising_vehicleToVehicle", fields: [vehicleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vehicle")
+  facebook        FacebookAd?
+  vehicle         Vehicle?    @relation(fields: [vehicleId], references: [id]) // added relation
+}
+
+model AutomatedMessage {
+  id          String   @id @default(cuid()) @db.VarChar(30)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  messageType String
+  sentBy      String?
+  messageId   String?
+  dealId      String?  @map("deal") @db.VarChar(30)
+  deal        Deal?    @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+}
+
+model BridgeAccountTransactionToTransactionItem {
+  id             String      @id @default(cuid()) @db.VarChar(30)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  searchString   String
+  accountingType String
+  dealershipId   String?     @map("dealership") @db.VarChar(30)
+  vendorId       String?     @map("vendor") @db.VarChar(30)
+  dealership     Dealership? @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  vendor         Vendor?     @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+}
+
+model CustomerPlaidAccount {
+  id                String    @id @default(cuid()) @db.VarChar(30)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  institution       String?
+  accounts          Json?
+  link_session_id   String
+  access_token      String?
+  stripeToken       String?
+  stripeResponse    Json?
+  userId            String?   @map("user") @db.VarChar(30)
+  selectedAccountId String?
+  balance           Int?
+  balanceDate       DateTime?
+  user              User?     @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model CustomerVehicleSearch {
+  id            String                                       @id @default(cuid()) @db.VarChar(30)
+  createdAt     DateTime                                     @default(now())
+  updatedAt     DateTime                                     @updatedAt
+  search        Json
+  name          String
+  viewCount     Int?                                         @default(0)
+  isDeleted     Boolean?                                     @default(false)
+  userId        String?                                      @map("user") @db.VarChar(30)
+  notifications CustomVehicleSearchNotificationOptionsEnum[] @map("notifications")
+  user          User?                                        @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model Date {
+  id              String      @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  date            DateTime
+  label           String
+  isUpcoming      Boolean     @default(false)
+  isForDealership Boolean     @default(false)
+  dateType        String?
+  actionId        String?     @map("action") @db.VarChar(30)
+  dealId          String?     @map("deal") @db.VarChar(30)
+  action          DealAction? @relation(fields: [actionId], references: [id], onUpdate: NoAction)
+  deal            Deal?       @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+}
+
+model Deal {
+  id                   String             @id @default(cuid()) @db.VarChar(30)
+  createdAt            DateTime           @default(now())
+  dealType             DealTypeEnum?      @default(RETAIL)
+  deliveryType         DealDeliveryType?  @default(Pickup)
+  registeringStateEnum StateEnum
+  updatedAt            DateTime           @updatedAt
+  isUserOnboarded      Boolean            @default(false)
+  questions            Json?
+  offerStatus          OfferTypeEnum?
+  status               DealStatusEnum?    @default(Offer)
+  storeId              String?            @map("store") @db.VarChar(30)
+  dealershipId         String?            @map("dealership") @db.VarChar(30)
+  dealership           Dealership?        @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  store                Store?             @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  automatedMessages    AutomatedMessage[]
+  dates                Date[]
+  actions              DealAction[]
+  addOns               DealAddOn[]
+  lineItems            DealLineItem[]
+  docs                 Doc[]
+  files                File[]
+  notes                Note[]
+  offers               Offer[]
+  tasks                Task[]
+  addresses            Address[]
+  signers              Signer[]           @relation("DealSigner")
+  emailAddresses       EmailAddress[]
+  phoneNumbers         PhoneNumber[]
+  trades               Trade[]
+  users                User[]
+  vehicles             Vehicle[]
+  financeApps          DealFinanceApp[]
+  disclosures          Disclosure[]
+}
+
+model StripeIdentity {
+  id                 String            @id @default(cuid()) @db.VarChar(30)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  dealFinanceBuyerId String?           @map("dealFinanceBuyer") @db.VarChar(30)
+  dealFinanceBuyer   DealFinanceBuyer? @relation(fields: [dealFinanceBuyerId], references: [id], onUpdate: NoAction)
+  isVerified         Boolean           @default(false)
+  verificationMeta   Json?
+}
+
+model DealFinanceBuyer {
+  id                  String           @id @default(cuid()) @db.VarChar(30)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  form                Json?
+  stripeIdentities    StripeIdentity[]
+  buyerApplications   DealFinanceApp[] @relation("FinanceAppBuyer")
+  coBuyerApplications DealFinanceApp[] @relation("FinanceAppCobuyer")
+}
+
+model DealFinanceApp {
+  id                 String                   @id @default(cuid()) @db.VarChar(30)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  clientId           String                   @unique
+  buyerId            String?                  @map("buyer") @db.VarChar(30)
+  buyer              DealFinanceBuyer?        @relation("FinanceAppBuyer", fields: [buyerId], references: [id])
+  coBuyerId          String?                  @map("coBuyer") @db.VarChar(30)
+  coBuyer            DealFinanceBuyer?        @relation("FinanceAppCobuyer", fields: [coBuyerId], references: [id])
+  downPayment        Int?
+  downPaymentMeta    Json?
+  insurance          Json?
+  stripeVerification Json?
+  creditMeta         Json?
+  creditScore        Int?
+  uiFormState        Json?
+  status             DealFinanceAppStatusEnum @default(DRAFT)
+  approvedOffer      DealFinanceOffer?        @relation("ApprovedOffer")
+  offers             DealFinanceOffer[]       @relation("DealFinanceOffers")
+  userId             String?                  @map("user") @db.VarChar(30)
+  user               User?                    @relation(fields: [userId], references: [id], onUpdate: Cascade)
+  dealId             String?                  @map("deal") @db.VarChar(30)
+  deal               Deal?                    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealershipId       String                   @map("dealership") @db.VarChar(30)
+  dealership         Dealership               @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+}
+
+enum DealFinanceAppStatusEnum {
+  DRAFT
+  QUEUED
+  PENDING
+  APPROVED
+  DECLINED
+  CLOSED
+}
+
+model DealFinanceOffer {
+  id              String                     @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  expiresAt       DateTime?
+  lenderName      String
+  financeType     String
+  financeAmount   Int
+  financeTerm     Int
+  financeRate     Float
+  financePayment  Int
+  dealerBuyFee    Int
+  prepaidCharge   Int
+  meta            Json?
+  approvedOfferId String?                    @unique @map("approvedOffer") @db.VarChar(30)
+  approvedOffer   DealFinanceApp?            @relation("ApprovedOffer", fields: [approvedOfferId], references: [id])
+  applicationId   String                     @map("application") @db.VarChar(30)
+  application     DealFinanceApp             @relation("DealFinanceOffers", fields: [applicationId], references: [id], onDelete: Cascade)
+  status          DealFinanceOfferStatusEnum
+  reason          String?
+  stipulations    DealFinanceStipulation[]
+}
+
+enum DealFinanceOfferStatusEnum {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+model DealFinanceStipulation {
+  id          String                @id @default(cuid()) @db.VarChar(30)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  completedAt DateTime?
+  status      StipulationStatusEnum
+  buyerText   String?
+  meta        Json?
+  stipType    StipulationTypeEnum
+  stipFor     StipulationForEnum
+  offerId     String                @map("application") @db.VarChar(30)
+  offer       DealFinanceOffer      @relation(fields: [offerId], references: [id], onDelete: Cascade)
+}
+
+enum StipulationStatusEnum {
+  PENDING
+  COMPLETE
+  VOID
+}
+
+enum StipulationTypeEnum {
+  UPLOAD
+  INFO
+}
+
+enum StipulationForEnum {
+  DEALER
+  BUYER
+}
+
+model DealAction {
+  id                  String              @id @default(cuid()) @db.VarChar(30)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  label               String
+  description         String?
+  customerDescription String?
+  actionType          String
+  isInternal          Boolean?            @default(false)
+  isVisible           Boolean?            @default(true)
+  isActionable        Boolean?            @default(false)
+  isComplete          Boolean?            @default(false)
+  isDefault           Boolean?            @default(false)
+  completedDate       DateTime?
+  timeToComplete      DateTime?
+  meta                Json?
+  userView            String
+  noDealDuplicates    Boolean?            @default(false)
+  vehicleId           String?             @map("vehicle") @db.VarChar(30)
+  dealId              String?             @map("deal") @db.VarChar(30)
+  addOnId             String?             @map("addOn") @db.VarChar(30)
+  inheritsFromId      String?             @map("inheritsFrom") @db.VarChar(30)
+  storeId             String?             @map("store") @db.VarChar(30)
+  dealershipId        String?             @map("dealership") @db.VarChar(30)
+  actionFor           DealActionForEnum[] @map("actionFor")
+  //  completedOnId       DealStatusEnum[]    @map("completedOn")
+  showOn              DealStatusEnum[]
+  completedOn         DealStatusEnum[]    @map("completedOn")
+  sideEffects         SideEffectsEnum[]   @map("sideEffects")
+  addOn               DealAddOn?          @relation(fields: [addOnId], references: [id], onUpdate: NoAction)
+  deal                Deal?               @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+  dealership          Dealership?         @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  //  inheritsFromId      DealAction?         @map("inheritsFrom") @relation("DealActionToDealAction_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  store               Store?              @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  vehicle             Vehicle?            @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  dates               Date[]
+  //  inheritsFrom        DealAction[]        @relation("DealActionToDealAction_inheritsFrom")
+  inheritsFrom        DealAction?         @relation("DealActionToDealAction_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  inheritsTo          DealAction[]        @relation("DealActionToDealAction_inheritsFrom") // added
+  lineItems           DealLineItem[]
+}
+
+model DealAddOn {
+  id                      String         @id @default(cuid()) @db.VarChar(30)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  persistOnDeal           Boolean?       @default(false)
+  onePerDeal              Boolean?       @default(false)
+  label                   String
+  customerComponent       String?
+  description             String?
+  addToDeal               Boolean?       @default(false)
+  isAccepted              Boolean?       @default(false)
+  isAcceptedDate          DateTime?
+  isRequired              Boolean?       @default(false)
+  isDefault               Boolean?       @default(false)
+  storeId                 String?        @map("store") @db.VarChar(30)
+  dealershipId            String?        @map("dealership") @db.VarChar(30)
+  //  inheritsFromId          String?        @map("inheritsFrom") @db.VarChar(30)
+  dealId                  String?        @map("deal") @db.VarChar(30)
+  vehicleId               String?        @map("vehicle") @db.VarChar(30)
+  title                   String?
+  estimatedCompletionTime String?
+  conditionals            Json?
+  addedBy                 String?
+  benefits                String[]
+  images                  String[]
+  deal                    Deal?          @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+  dealership              Dealership?    @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  //  inheritsFromId          DealAddOn?     @map("inheritsFrom") @relation("DealAddOnToDealAddOn_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  //  inheritsFromId          DealAddOn?     @map("inheritsFrom") @relation("DealAddOnToDealAddOn_inheritsFromId", fields: [inheritsFromIdId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_dealaddon")
+  store                   Store?         @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  vehicle                 Vehicle?       @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  actions                 DealAction[]
+  //  inheritsFromId          DealAddOn[]    @map("inheritsFrom") @relation("DealAddOnToDealAddOn_inheritsFrom")
+  inheritsFromId          String?        @map("inheritsFrom") @db.VarChar(30) // added @map
+  //  inheritsFrom            DealAddOn?    @relation("DealAddOnToDealAddOn_inheritsFromId") // changed to 1 - 1
+  inheritsFrom            DealAddOn?     @relation("DealAddOnToDealAddOn_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  inheritsTo              DealAddOn[]    @relation("DealAddOnToDealAddOn_inheritsFrom") // added
+  //  lineItemsId             DealLineItem[] @map("lineItems")
+  tasks                   Task[]
+  lineItems               DealLineItem[]
+  docs                    Doc[]
+}
+
+// model DealLineItemsOnDealAddOns {
+//   id                      String         @id @default(cuid()) @db.VarChar(30)
+//   createdAt               DateTime       @default(now())
+//   updatedAt               DateTime       @updatedAt
+//   dealAddOnId             String?        @map("dealAddOn") @db.VarChar(30)
+//   dealLineItemId          String?        @map("dealLineItem") @db.VarChar(30)
+//   dealAddOn               DealAddOn?     @relation(fields: [dealAddOnId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+//   dealLineItem            DealLineItem?  @relation(fields: [dealLineItemId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+// }
+
+model DealerAccount {
+  id                            String               @id @default(cuid()) @db.VarChar(30)
+  createdAt                     DateTime             @default(now())
+  updatedAt                     DateTime             @updatedAt
+  institutionName               String
+  accountName                   String
+  accountType                   String
+  dealershipsNameForThisAccount String?
+  lastFour                      String?
+  available                     Int
+  limit                         Int?
+  dealershipId                  String?              @map("dealership") @db.VarChar(30)
+  plaidId                       String?              @unique @map("plaid") @db.VarChar(30)
+  permissions                   RolesEnum[]          @map("permissions")
+  dealership                    Dealership?          @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  //  plaid                         PlaidAccount?        @relation(fields: [plaidId], references: [id])
+  plaid                         PlaidAccount?
+  checks                        AccountCheck[]
+  transactions                  AccountTransaction[]
+}
+
+model DealerLicensePlate {
+  id               String                  @id @default(cuid()) @db.VarChar(30)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  plateNumber      String
+  isActive         Boolean                 @default(true)
+  storeId          String?                 @map("store") @db.VarChar(30)
+  dealershipId     String?                 @map("dealership") @db.VarChar(30)
+  dealership       Dealership?             @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  store            Store?                  @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  licensePlateLogs DealerLicensePlateLog[]
+}
+
+model DealerLicensePlateLog {
+  id                       String                  @id @default(cuid()) @db.VarChar(30)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  checkout                 DateTime
+  returned                 DateTime?
+  storeId                  String?                 @map("store") @db.VarChar(30)
+  dealershipId             String?                 @map("dealership") @db.VarChar(30)
+  //  dealerLicensePlateUserId              String?                 @map("dealerLicensePlateUser") @db.VarChar(30)
+  dealerLicensePlateId     String?                 @map("dealerLicensePlate") @db.VarChar(30)
+  userId                   String?                 @map("user") @db.VarChar(30)
+  vehicleId                String?                 @map("vehicle") @db.VarChar(30)
+  checkoutMileage          Int?
+  returnedMileage          Int?
+  dealerLicensePlateUserId String?                 @map("dealerLicensePlateUser") @db.VarChar(30)
+  // removed after added to resolve conflict with plateUser
+  //  dealerLicensePlateUser   DealerLicensePlateUser? @relation("DealerLicensePlateLog_plateUserToDealerLicensePlateUser", fields: [dealerLicensePlateUserId], references: [id], onUpdate: NoAction) // added
+  dealerLicensePlate       DealerLicensePlate?     @relation(fields: [dealerLicensePlateId], references: [id], onUpdate: NoAction)
+  //  plateUserId              DealerLicensePlateUser? @map("plateUser") @relation("DealerLicensePlateLog_dealerLicensePlateUserToDealerLicensePlateUser", fields: [dealerLicensePlateUserId], references: [id], onUpdate: NoAction)
+  dealership               Dealership?             @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  dealerLicensePlateUser   DealerLicensePlateUser? @relation("DealerLicensePlateLog_plateUserToDealerLicensePlateUser", fields: [dealerLicensePlateUserId], references: [id], onUpdate: NoAction)
+  store                    Store?                  @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  user                     User?                   @relation(fields: [userId], references: [id], onUpdate: NoAction, map: "DealerLicensePlateLog_user_fkey1")
+  vehicle                  Vehicle?                @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+}
+
+model DealerLicensePlateUser {
+  id              String                  @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  name            String
+  searchableName  String
+  addressId       String?                 @map("address") @db.VarChar(30)
+  userId          String?                 @map("user") @db.VarChar(30)
+  dealershipId    String?                 @map("dealership") @db.VarChar(30)
+  driverLicenseId String?                 @map("driverLicense") @db.VarChar(30)
+  address         Address?                @relation(fields: [addressId], references: [id], onUpdate: NoAction)
+  dealership      Dealership?             @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  driverLicense   DriverLicense?          @relation(fields: [driverLicenseId], references: [id], onUpdate: NoAction)
+  user            User?                   @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  //  checkoutsId     DealerLicensePlateLog[] @map("checkouts") @relation("DealerLicensePlateLog_dealerLicensePlateUserToDealerLicensePlateUser")
+  checkouts       DealerLicensePlateLog[] @relation("DealerLicensePlateLog_plateUserToDealerLicensePlateUser")
+}
+
+model Dealership {
+  id                                        String                                      @id @default(cuid()) @db.VarChar(30)
+  name                                      String                                      @unique
+  phone                                     String?
+  email                                     String?                                     @unique
+  slug                                      String                                      @unique
+  isActive                                  Boolean                                     @default(true)
+  createdAt                                 DateTime                                    @default(now())
+  updatedAt                                 DateTime                                    @updatedAt
+  customerPayment                           Json?
+  host                                      String?                                     @unique
+  state                                     StateEnum                                   @default(AZ) @map("state")
+  transactions                              AccountTransaction[]
+  BridgeAccountTransactionToTransactionItem BridgeAccountTransactionToTransactionItem[]
+  deals                                     Deal[]
+  actions                                   DealAction[]
+  addOns                                    DealAddOn[]
+  accounts                                  DealerAccount[]
+  licensePlates                             DealerLicensePlate[]
+  licensePlateLogs                          DealerLicensePlateLog[]
+  licensePlateUsers                         DealerLicensePlateUser[]
+  dealershipFloorPlans                      DealershipFloorPlan[]
+  integrations                              DealershipIntegration[]
+  lineItems                                 DealLineItem[]
+  docs                                      Doc[]
+  emailSubscribers                          EmailSubscriber[]
+  facebookAdGroups                          FacebookAdGroup[]
+  files                                     File[]
+  notes                                     Note[]
+  user                                      Permission[]
+  plaidAccounts                             PlaidAccount[]
+  siteBanners                               SiteBanner[]
+  stores                                    Store[]
+  tasks                                     Task[]
+  TransactionItem                           TransactionItem[]
+  allowedTransactionTypes                   TransactionTypeAllowedList[]
+  //  customersId                               User[]                                      @map("customers") @relation("DealershipToUser_dealership")
+  customers                                 User[]                                      @relation("DealershipToUser_dealership") // added
+  workers                                   User[]                                      @relation("DealershipToUser_worksFor") // added
+  vehicles                                  Vehicle[]
+  vendors                                   Vendor[]
+  webUpdates                                WebUpdate[]
+  financeApps                               DealFinanceApp[]
+}
+
+model DealershipFloorPlan {
+  id                  String             @id @default(cuid()) @db.VarChar(30)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  username            String?
+  password            String?
+  floorPlanProviderId String?            @map("floorPlanProvider") @db.VarChar(30)
+  dealershipId        String?            @map("dealership") @db.VarChar(30)
+  loginError          Boolean?           @default(false)
+  dealership          Dealership?        @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  floorPlanProvider   FloorPlanProvider? @relation(fields: [floorPlanProviderId], references: [id], onUpdate: NoAction)
+}
+
+model DealershipIntegration {
+  id                String                        @id @default(cuid()) @db.VarChar(30)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  username          String?
+  password          String?
+  loginError        Boolean?                      @default(false)
+  loginErrorMessage String?
+  isActive          Boolean                       @default(true)
+  dealershipId      String?                       @map("dealership") @db.VarChar(30)
+  serviceId         String?                       @map("service") @db.VarChar(30)
+  dealership        Dealership?                   @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  service           DealershipIntegrationService? @relation(fields: [serviceId], references: [id], onUpdate: NoAction)
+}
+
+model DealershipIntegrationService {
+  id                 String                          @id @default(cuid()) @db.VarChar(30)
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  label              String
+  service            String?
+  isActive           Boolean                         @default(true)
+  status             String?
+  statusMessage      String?
+  authenticationType String
+  serviceTypes       DealershipIntegrationTypeEnum[] @map("serviceTypes")
+  dealerships        DealershipIntegration[]
+}
+
+model DealLineItem {
+  id                     String                @id @default(cuid()) @db.VarChar(30)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  amount                 Int
+  ledgerType             LedgerTypeEnum
+  label                  String
+  isTaxable              Boolean?              @default(true)
+  allowCreditCardPayment Boolean?              @default(false)
+  lineItemType           DealLineItemTypeEnum?
+  meta                   Json?
+  transactionId          String?               @map("transaction") @db.VarChar(30)
+  actionId               String?               @map("action") @db.VarChar(30)
+  storeId                String?               @map("store") @db.VarChar(30)
+  dealershipId           String?               @map("dealership") @db.VarChar(30)
+  dealId                 String?               @map("deal") @db.VarChar(30)
+  conditionals           Json?
+  modifyBaseAmount       Json?
+  persistOnDeal          Boolean?              @default(false)
+  limitOnePerDeal        Boolean?              @default(false)
+  taskId                 String?               @map("task") @db.VarChar(30)
+  vehicleFeeId           String?               @map("vehicleFee") @db.VarChar(30)
+  inheritsFromId         String?               @map("inheritsFrom") @db.VarChar(30)
+  excludeFrom            String[]
+  dealAddOn              String?               @db.VarChar(30)
+  action                 DealAction?           @relation(fields: [actionId], references: [id], onUpdate: NoAction)
+  deal                   Deal?                 @relation(fields: [dealId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  inheritsFrom           DealLineItem?         @relation("DealLineItemToDealLineItem_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction) // added
+  //  DealAddOn_DealAddOnToDealLineItem DealAddOn?          @relation(fields: [dealAddOnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_author")
+  dealership             Dealership?           @relation(fields: [dealershipId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  //  inheritsFromId                    DealLineItem?       @map("inheritsFrom") @relation("DealLineItemToDealLineItem_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  store                  Store?                @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  task                   Task?                 @relation(fields: [taskId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  transaction            AccountTransaction?   @relation(fields: [transactionId], references: [id], onUpdate: NoAction)
+  vehicleFee             Vehicle?              @relation(fields: [vehicleFeeId], references: [id], onUpdate: NoAction)
+  //  inheritsFrom                      DealLineItem[]      @relation("DealLineItemToDealLineItem_inheritsFrom")
+  dealAddOns             DealAddOn[]
+  inheritsFromOpposite   DealLineItem[]        @relation("DealLineItemToDealLineItem_inheritsFrom")
+}
+
+model defaultArray {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model defaultString {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Device {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  uuid      String?  @unique
+  userAgent String?
+  IP        String?
+  users     User[]
+}
+
+model Disclosure {
+  id              String    @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  text            String
+  legalDisclaimer String?
+  showInDocs      Boolean   @default(true)
+  showOnWebsite   Boolean   @default(true)
+  showInAds       Boolean   @default(true)
+  headline        String
+  component       String?
+  vehicles        Vehicle[]
+  deals           Deal[]
+}
+
+model Doc {
+  id                    String       @id @default(cuid()) @db.VarChar(30)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  docType               DocTypeEnum  @default(SIGN)
+  docIsFor              DocIsForEnum @default(DEAL)
+  label                 String
+  component             String?
+  additionalContent     String?
+  isDefault             Boolean?     @default(false)
+  meta                  Json?
+  storeId               String?      @map("store") @db.VarChar(30)
+  dealId                String?      @map("deal") @db.VarChar(30)
+  inheritsFromId        String?      @map("inheritsFrom") @db.VarChar(30)
+  dealershipId          String?      @map("dealership") @db.VarChar(30)
+  vehicleId             String?      @map("vehicle") @db.VarChar(30)
+  completedFileId       String?      @unique @map("completedFile") @db.VarChar(30)
+  canElectronicallySign Boolean?     @default(true)
+  //  completedFileId       File?       @map("completedFile")
+  deal                  Deal?        @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+  dealership            Dealership?  @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  //  inheritsFromId        Doc?        @map("inheritsFrom") @relation("DocToDoc_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  store                 Store?       @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  vehicle               Vehicle?     @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  //  inheritsFrom          Doc[]       @relation("DocToDoc_inheritsFrom")
+  inheritsFromOpposite  Doc[]        @relation("DocToDoc_inheritsFrom")
+  inheritsFrom          Doc?         @relation("DocToDoc_inheritsFrom", fields: [inheritsFromId], references: [id], onUpdate: NoAction)
+  signed                SignedDoc[]
+  DealAddOn             DealAddOn[]
+  completedFile         File?        @relation("DocFile", fields: [completedFileId], references: [id], onUpdate: NoAction)
+  signers               Signer[]
+  users                 User[]
+}
+
+model DriverLicense {
+  id                     String                   @id @default(cuid()) @db.VarChar(30)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  name                   String
+  addressId              String?                  @map("address") @db.VarChar(30)
+  fileId                 String?                  @map("file") @db.VarChar(30)
+  expires                DateTime?
+  height                 String?
+  weight                 String?
+  DOB                    DateTime?
+  sex                    String?
+  issueDate              String?
+  eyeColor               String?
+  number                 String?
+  meta                   Json?
+  state                  String?
+  address                Address?                 @relation(fields: [addressId], references: [id], onUpdate: NoAction)
+  file                   File?                    @relation(fields: [fileId], references: [id], onUpdate: NoAction)
+  DealerLicensePlateUser DealerLicensePlateUser[]
+  userId                 String?                  @map("user") @db.VarChar(30)
+  user                   User?                    @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model ElectronicSignatureConsent {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ip        String?
+  signer    Signer?
+  //  signerId String?  @map("signer") @db.VarChar(30) // added
+  //  signer    Signer?  @relation(fields: [signerId], references: [id]) // added relation
+}
+
+model EmailAddress {
+  id             String          @id @default(cuid()) @db.VarChar(30)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  name           String?
+  email          String
+  emailOwnerEnum OwnerEnum       @default(Buyer)
+  userId         String?         @map("user") @db.VarChar(30)
+  emailType      EmailTypeEnum[] @map("emailType")
+  user           User?           @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  deals          Deal[]
+}
+
+model EmailSubscriber {
+  id               String                    @id @default(cuid()) @db.VarChar(30)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  email            String
+  subscriptionType EmailSubscriptionTypeEnum
+  isSubscribed     Boolean                   @default(true)
+  userId           String?                   @map("user") @db.VarChar(30)
+  dealerId         String?                   @map("dealer") @db.VarChar(30)
+  isEmailVerified  Boolean?                  @default(false)
+  signupDate       DateTime?
+  lastOpenedDate   DateTime?
+  lastClickedDate  DateTime?
+  emailsReceived   Int?
+  emailsOpened     Int?
+  emailsClicked    Int?
+  tags             String[]
+  dealer           Dealership?               @relation(fields: [dealerId], references: [id], onUpdate: NoAction)
+  user             User?                     @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model FacebookAd {
+  id            String       @id @default(cuid()) @db.VarChar(30)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  isActive      Boolean      @default(true)
+  adgroups      String[]
+  adGroups      String[]
+  advertisingId String?      @unique @db.VarChar(30)
+  //  advertisingId Advertising? @map("advertising") @relation("AdvertisingToFacebookAd_advertisingId", fields: [advertisingIdId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_advertising")
+  advertising   Advertising? @relation(fields: [advertisingId], references: [id])
+}
+
+model FacebookAdGroup {
+  id           String      @id @default(cuid()) @db.VarChar(30)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  adGroup      String?
+  dealershipId String?     @map("dealership") @db.VarChar(30)
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+}
+
+model File {
+  id            String          @id @default(cuid()) @db.VarChar(30)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  Key           String?         @unique
+  displayName   String
+  internalName  String?
+  Bucket        String?
+  description   String?
+  fileType      FileTypeEnum
+  meta          Json?
+  userId        String?         @map("user") @db.VarChar(30)
+  vehicleId     String?         @map("vehicle") @db.VarChar(30)
+  dealershipId  String?         @map("dealership") @db.VarChar(30)
+  storeId       String?         @map("store") @db.VarChar(30)
+  signerId      String?         @map("signer") @db.VarChar(30)
+  dealId        String?         @map("deal") @db.VarChar(30)
+  access        RolesEnum[]     @map("access")
+  tags          FileTagEnum[]   @map("tags")
+  deal          Deal?           @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+  dealership    Dealership?     @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  signer        Signer?         @relation(fields: [signerId], references: [id], onUpdate: NoAction)
+  store         Store?          @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  user          User?           @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  vehicle       Vehicle?        @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  DriverLicense DriverLicense[]
+  //   completedFileId String? @unique
+  completedFile Doc?            @relation("DocFile")
+}
+
+model FloorPlan {
+  id                  String              @id @default(cuid()) @db.VarChar(30)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  floorPlanId         String
+  floorPlanStockNo    String
+  vehicleFloorAmount  Int
+  principle           Int
+  payoff              Int
+  isPaid              Boolean?            @default(false)
+  titleStatus         String?
+  meta                Json?
+  floorPlanProviderId String?             @map("floorPlanProvider") @db.VarChar(30)
+  floorDate           DateTime
+  feeTotal            Int
+  interestTotal       Int
+  nextPaymentDate     DateTime?
+  nextPaymentAmount   Int?
+  paidDate            DateTime?
+  floorPlanProvider   FloorPlanProvider?  @relation(fields: [floorPlanProviderId], references: [id], onUpdate: NoAction)
+  floorPlanActions    FloorPlanAction[]
+  lineItems           FloorPlanLineItem[]
+  Vehicle             Vehicle[]
+}
+
+model FloorPlanAction {
+  id          String     @id @default(cuid()) @db.VarChar(30)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  name        String
+  value       String?
+  isComplete  Boolean?   @default(false)
+  dueDate     DateTime?
+  meta        Json?
+  floorplanId String?    @map("floorplan") @db.VarChar(30)
+  floorplan   FloorPlan? @relation(fields: [floorplanId], references: [id], onUpdate: NoAction)
+}
+
+model FloorPlanLineItem {
+  id               String     @id @default(cuid()) @db.VarChar(30)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  name             String
+  amount           Int
+  lineItemLabel    String
+  lineItemTypeType String
+  floorPlanId      String?    @map("floorPlan") @db.VarChar(30)
+  floorPlan        FloorPlan? @relation(fields: [floorPlanId], references: [id], onUpdate: NoAction)
+}
+
+model FloorPlanProvider {
+  id                   String                @id @default(cuid()) @db.VarChar(30)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  name                 String
+  dealershipFloorPlans DealershipFloorPlan[]
+  floorPlans           FloorPlan[]
+}
+
+model InAppNotification {
+  id             String        @id @default(cuid()) @db.VarChar(30)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  isRead         Boolean       @default(false)
+  userId         String?       @map("user") @db.VarChar(30)
+  notificationId String?       @map("notification") @db.VarChar(30)
+  notification   Notification? @relation(fields: [notificationId], references: [id], onUpdate: NoAction)
+  user           User?         @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model Note {
+  id           String      @id @default(cuid()) @db.VarChar(30)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  text         String
+  vehicleId    String?     @map("vehicle") @db.VarChar(30)
+  fromId       String?     @map("from") @db.VarChar(30)
+  dealId       String?     @map("deal") @db.VarChar(30)
+  dealershipId String?     @map("dealership") @db.VarChar(30)
+  tags         String[]
+  deal         Deal?       @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  from         User?       @relation(fields: [fromId], references: [id], onUpdate: NoAction)
+  vehicle      Vehicle?    @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+}
+
+model Notification {
+  id                 String              @id @default(cuid()) @db.VarChar(30)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  title              String
+  description        String
+  image              String?
+  link               String?
+  notificationId     String
+  inAppNotifications InAppNotification[]
+}
+
+model Offer {
+  id        String        @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  type      OfferTypeEnum
+  amount    Int
+  dealId    String?       @map("deal") @db.VarChar(30)
+  deal      Deal?         @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+}
+
+model Permission {
+  id           String      @id @default(cuid()) @db.VarChar(30)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  userId       String?     @map("user") @db.VarChar(30)
+  dealershipId String?     @map("dealership") @db.VarChar(30)
+  role         String      @default("{LEAD}")
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  user         User?       @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model PhoneNumber {
+  id                   String              @id @default(cuid()) @db.VarChar(30)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  phoneNumber          String
+  contactName          String?
+  businessName         String?
+  phoneNumberOwnerEnum OwnerEnum           @default(Buyer)
+  phoneNumberType      PhoneNumberTypeEnum @default(Mobile)
+  mobileCarrier        String?
+  country              String?             @default("USA")
+  userId               String?             @map("user") @db.VarChar(30)
+  vendorId             String?             @map("vendor") @db.VarChar(30)
+  user                 User?               @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  vendor               Vendor?             @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+  deals                Deal[]
+  physicalAccess       PhysicalAccess[]
+}
+
+model PhysicalAccess {
+  id                String              @id @default(cuid()) @db.VarChar(30)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  startDate         DateTime
+  endDate           DateTime
+  expiresAfterStart Int?
+  userId            String?             @map("user") @db.VarChar(30)
+  user              User?               @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  accessControl     AccessControlEnum
+  logs              PhysicalAccessLog[]
+  phoneNumbers      PhoneNumber[]
+}
+
+model PhysicalAccessLog {
+  id        String          @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  action    String
+  accessId  String?         @map("access") @db.VarChar(30)
+  access    PhysicalAccess? @relation(fields: [accessId], references: [id], onUpdate: NoAction)
+}
+
+model PlaidAccount {
+  id              String        @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  accessToken     String
+  accountId       String        @unique
+  itemId          String?
+  name            String
+  type            String?
+  subtype         String?
+  officialName    String?
+  dealershipId    String        @map("dealership") @db.VarChar(30)
+  dealership      Dealership    @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  dealerAccountId String        @unique @map("dealerAccount") @db.VarChar(30) // added
+  dealerAccount   DealerAccount @relation(fields: [dealerAccountId], references: [id], onUpdate: NoAction) // added
+}
+
+model SignedDoc {
+  id             String   @id @default(cuid()) @db.VarChar(30)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ip             String?
+  docSignatureId String
+  docId          String?  @map("doc") @db.VarChar(30)
+  signerId       String?  @map("signer") @db.VarChar(30)
+  doc            Doc?     @relation(fields: [docId], references: [id], onUpdate: NoAction)
+  signer         Signer?  @relation(fields: [signerId], references: [id], onUpdate: NoAction)
+}
+
+model Signer {
+  id                  String                      @id @default(cuid()) @db.VarChar(30)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  name                String
+  registerName        String?
+  userId              String?                     @map("user") @db.VarChar(30)
+  electronicConsentId String?                     @unique @map("electronicConsent") @db.VarChar(30)
+  signerTags          SignerTagEnum[]             @map("signerTags")
+  electronicConsent   ElectronicSignatureConsent? @relation(fields: [electronicConsentId], references: [id], onUpdate: NoAction)
+  user                User?                       @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  signatureFiles      File[]
+  usedToSign          SignedDoc[]
+  SignerTag           SignerTag[]
+  deals               Deal[]                      @relation("DealSigner")
+  docs                Doc[]
+}
+
+model SignerTag {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tag       String?
+  signerId  String?  @map("signer") @db.VarChar(30)
+  signer    Signer?  @relation(fields: [signerId], references: [id], onUpdate: NoAction)
+}
+
+model SiteBanner {
+  id           String      @id @default(cuid()) @db.VarChar(30)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  text         String
+  link         String?
+  allowClose   Boolean?    @default(true)
+  startAt      DateTime
+  stopAt       DateTime
+  dealershipId String?     @map("dealership") @db.VarChar(30)
+  colorScheme  String      @default("BRAND")
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+}
+
+model Store {
+  id                 String                  @id @default(cuid()) @db.VarChar(30)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  name               String
+  publicName         String?
+  legalName          String?
+  street             String?
+  city               String?
+  state              String?
+  zip                String?
+  phone              String?
+  internalName       String?
+  isActive           Boolean                 @default(true)
+  dealershipId       String?                 @map("dealership") @db.VarChar(30)
+  slug               String                  @unique
+  dealership         Dealership?             @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  deals              Deal[]
+  actions            DealAction[]
+  addOns             DealAddOn[]
+  licensePlates      DealerLicensePlate[]
+  licensePlateLog    DealerLicensePlateLog[]
+  DealLineItem       DealLineItem[]
+  docs               Doc[]
+  files              File[]
+  tasks              Task[]
+  vehicles           Vehicle[]
+  vehicleTaxPolicies VehicleTaxPolicy[]
+}
+
+model Task {
+  id                   String              @id @default(cuid()) @db.VarChar(30)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  uniqueId             String              @unique
+  label                String?
+  order                Int?
+  status               DealTaskStatusEnum
+  userViewCompleted    Boolean             @default(false)
+  isRequired           Boolean             @default(false)
+  isComplete           Boolean             @default(false)
+  completeBy           DateTime?
+  scheduledFor         DateTime?
+  completedAt          DateTime?
+  isActive             Boolean             @default(false)
+  showCustomer         Boolean             @default(false)
+  taskData             Json?
+  uiData               Json?
+  customerUI           CustomerUIEnum
+  dealerUI             DealerUIEnum
+  addOnsId             String?             @map("addOns") @db.VarChar(30)
+  dealId               String?             @map("deal") @db.VarChar(30)
+  dealershipId         String?             @map("dealership") @db.VarChar(30)
+  storeId              String?             @map("store") @db.VarChar(30)
+  vehicleId            String?             @map("vehicle") @db.VarChar(30)
+  isFor                DealTaskIsForEnum[] @map("isFor")
+  eventFor             EventEnum[]         @map("eventFor")
+  addOns               DealAddOn?          @relation(fields: [addOnsId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  deal                 Deal?               @relation(fields: [dealId], references: [id], onUpdate: NoAction)
+  dealership           Dealership?         @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  store                Store?              @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  vehicle              Vehicle?            @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  lineItems            DealLineItem[]
+  alertIndividualUsers User[]              @relation("UserTask")
+}
+
+model Trade {
+  id         String   @id @default(cuid()) @db.VarChar(30)
+  year       Int
+  make       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  model      String?
+  vin        String?
+  tradeValue Int
+  deals      Deal[]
+}
+
+model TransactionItem {
+  id                   String              @id @default(cuid()) @db.VarChar(30)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  description          String
+  amount               Int
+  vendorId             String?             @map("vendor") @db.VarChar(30)
+  dealershipId         String?             @map("dealership") @db.VarChar(30)
+  accountTransactionId String?             @map("accountTransaction") @db.VarChar(30)
+  accountingType       String
+  checkId              String?             @map("check") @db.VarChar(30)
+  belongsTo            RolesEnum[]         @map("belongsTo")
+  accountTransaction   AccountTransaction? @relation(fields: [accountTransactionId], references: [id], onUpdate: NoAction)
+  check                AccountCheck?       @relation(fields: [checkId], references: [id], onUpdate: NoAction)
+  dealership           Dealership?         @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  vendor               Vendor?             @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+  vehicleRecon         VehicleRecon?
+}
+
+model TransactionTypeAllowedList {
+  id           String      @id @default(cuid()) @db.VarChar(30)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  name         String
+  isReconType  Boolean     @default(true)
+  dealershipId String?     @map("dealership") @db.VarChar(30)
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+}
+
+model User {
+  id                        String                       @id @default(cuid()) @db.VarChar(30)
+  email                     String?
+  name                      String?
+  phone                     String?
+  identity                  String?
+  avatar                    String?
+  auth0id                   String?                      @unique
+  createdAt                 DateTime                     @default(now())
+  updatedAt                 DateTime                     @updatedAt
+  meta                      Json?
+  dealershipId              String?                      @map("dealership") @db.VarChar(30)
+  worksForId                String?                      @map("worksFor") @db.VarChar(30)
+  //  driverLicenseId           String?                      @map("driverLicense") @db.VarChar(30)
+  //  dummyString               String?
+  //  worksForId                Dealership?                  @map("worksFor") @relation("DealershipToUser_dealership", fields: [dealershipId], references: [id], onUpdate: NoAction)
+  driverLicenses            DriverLicense[]
+  worksFor                  Dealership?                  @relation("DealershipToUser_worksFor", fields: [worksForId], references: [id], onUpdate: NoAction)
+  dealership                Dealership?                  @relation("DealershipToUser_dealership", fields: [dealershipId], references: [id], onUpdate: NoAction)
+  addresses                 Address[]
+  plaidAccounts             CustomerPlaidAccount[]
+  savedVehicleSearches      CustomerVehicleSearch[]
+  licensePlateLog           DealerLicensePlateLog[]
+  DealerLicensePlateUser    DealerLicensePlateUser[]
+  emailAddresses            EmailAddress[]
+  emailSubscribers          EmailSubscriber[]
+  files                     File[]
+  notifications             InAppNotification[]
+  notes                     Note[]
+  permissions               Permission[]
+  phoneNumbers              PhoneNumber[]
+  physicalAccess            PhysicalAccess[]
+  signers                   Signer[]
+  notificationSubscriptions UserNotificationPreference[]
+  VehiclePrice              VehiclePrice[]
+  deals                     Deal[]
+  devices                   Device[]
+  docs                      Doc[]
+  tasks                     Task[]                       @relation("UserTask")
+  financeApps               DealFinanceApp[]
+}
+
+model UserNotificationPreference {
+  id        String                   @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  event     EventEnum
+  userId    String?                  @map("user") @db.VarChar(30)
+  methods   NotificationMethodEnum[] @map("methods")
+  user      User?                    @relation(fields: [userId], references: [id], onUpdate: NoAction)
+}
+
+model Vehicle {
+  id                            String                 @id @default(cuid()) @db.VarChar(30)
+  createdAt                     DateTime               @default(now())
+  updatedAt                     DateTime               @updatedAt
+  stockNo                       String
+  year                          Int
+  make                          String
+  model                         String?
+  trim                          String?                @default("")
+  image                         String?
+  vin                           String?                @default("00000000000000000")
+  fuel                          FuelEnum?              @default(Gas)
+  color                         String?
+  tempColor                     String?
+  transmission                  TransmissionEnum?      @default(Auto)
+  driveline                     DrivelineEnum?         @default(RWD)
+  title                         VehicleTitleEnum?      @default(Clean)
+  mileageStatus                 VehicleMileageEnum?    @default(Actual)
+  mileage                       Int?                   @default(0)
+  status                        VehicleStatusEnum      @default(Not_Delivered)
+  vehicleBoughtFromId           String?                @map("vehicleBoughtFrom") @db.VarChar(30)
+  storeId                       String?                @map("store") @db.VarChar(30)
+  dealershipId                  String?                @map("dealership") @db.VarChar(30)
+  tempVehicleBoughtFrom         String?
+  tempVehicleBoughtFromLocation String?
+  tempVehicleBoughtFromType     VehicleBoughtFromEnum? @default(Auction)
+  sentIsOnlineNotification      Boolean                @default(false)
+  kbbOptions                    Json?
+  trim2                         String?                @default("")
+  advertisingId                 String?                @unique @map("advertising") @db.VarChar(30)
+  titleHistoryTags              TitleHistoryEnum[]     @map("titleHistoryTags")
+  vehicleTypes                  VehicleTypeEnum[]      @map("vehicleTypes")
+  //  advertisingId                 Advertising?            @map("advertising") @relation("AdvertisingToVehicle_advertising", fields: [advertisingId], references: [id], onUpdate: NoAction)
+  dealership                    Dealership?            @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  store                         Store?                 @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+  // below removed for 1-1 relation
+  //  vehicleBoughtFrom             VehicleBoughtFrom?      @relation(fields: [vehicleBoughtFromId], references: [id]) // Error parsing attribute "@relation": The relation field `vehicleBoughtFrom` on Model `Vehicle` must not specify the `onDelete` or `onUpdate` argument in the @relation attribute. You must only specify it on the opposite field `vehicle` on model `VehicleBoughtFrom`.
+
+  vehicleBoughtFrom VehicleBoughtFrom?
+  advertising       Advertising[]
+  //  advertising                   Advertising[]           @relation("Advertising_vehicleToVehicle")
+  actions           DealAction[]
+  addOns            DealAddOn[]
+  plateLog          DealerLicensePlateLog[]
+  dealFees          DealLineItem[]
+  docs              Doc[]
+  files             File[]
+  notes             Note[]
+  tasks             Task[]
+  //  VehicleDate                   VehicleDate[]
+  dates             VehicleDate[]
+  images            VehicleImage[]
+  vehicleOptions    VehicleOption[]
+  prices            VehiclePrice[]
+  recon             VehicleRecon[]
+  videos            VehicleVideo[]
+  deals             Deal[]
+  disclosures       Disclosure[]
+  floorPlans        FloorPlan[]
+  pricingStats      VehiclePricingStat[]
+  checklist         VehicleChecklist[]
+}
+
+model VehicleChecklist {
+  id                String   @id @default(cuid()) @db.VarChar(30)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  item              String
+  order             Int      @default(0)
+  responses         Json
+  pictures          Json
+  repairs           Json
+  videos            Json
+  notes             Json
+  category          String
+  subCategory       String
+  inheritsFrom      String?
+  needsVideo        Boolean  @default(false)
+  needsPicture      Boolean  @default(false)
+  needsRepair       Boolean  @default(false)
+  hideFromChecklist Boolean  @default(false)
+  hideFromAd        Boolean  @default(false)
+  vehicleId         String   @map("vehicle") @db.VarChar(30)
+  vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model VehiclePricingStat {
+  id              String   @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  raw             Json
+  carGurusRetail  Int?
+  carfaxRetail    Int?
+  kbbRetail       Int?
+  mmrRetail       Int?
+  mmr             Int?
+  carGurusTradeIn Int?
+  kbbTradeIn      Int?
+  kbbAuction      Int?
+  vehicleId       String?  @map("vehicle") @db.VarChar(30)
+  vehicle         Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model VehicleBoughtFrom {
+  id                    String   @id @default(cuid()) @db.VarChar(30)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  vehicleBoughtFromType String   @default("Auction")
+  addressId             String?  @map("address") @db.VarChar(30)
+  vendorId              String?  @map("vendor") @db.VarChar(30)
+  address               Address? @relation(fields: [addressId], references: [id], onUpdate: NoAction)
+  vendor                Vendor?  @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+  vehicleId             String   @unique @map("vehicle") @db.VarChar(30) // added
+  vehicle               Vehicle  @relation(fields: [vehicleId], references: [id], onUpdate: NoAction) // added relation
+}
+
+model VehicleDate {
+  id        String              @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  date      DateTime
+  dateType  VehicleDateTypeEnum
+  vehicleId String?             @map("vehicle") @db.VarChar(30) // changed from vehicle to vehicleId
+  vehicle   Vehicle?            @relation(fields: [vehicleId], references: [id], onUpdate: NoAction) // had to lower case
+}
+
+model VehicleHistoryReport {
+  id           String   @id @default(cuid()) @db.VarChar(30)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  mobile       String?
+  desktop      String?
+  pdf          String?
+  vin          String
+  year         Int?
+  make         String?
+  model        String?
+  drivetrain   String?
+  fuel         String?
+  color        String?
+  transmission String?
+  vehicleType  String?
+  price        Int?
+  viewCount    Int?     @default(0)
+}
+
+model VehicleImage {
+  id          String            @id @default(cuid()) @db.VarChar(30)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  vehicleId   String?           @map("vehicle") @db.VarChar(30)
+  order       Int?              @default(0)
+  url         String
+  description String?
+  originalUrl String
+  access      RolesEnum[]       @map("access")
+  vehicle     Vehicle?          @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  tags        VehicleImageTag[]
+}
+
+model VehicleImageTag {
+  id        String              @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  tag       VehicleImageTagEnum
+  imageId   String?             @map("image") @db.VarChar(30)
+  image     VehicleImage?       @relation(fields: [imageId], references: [id], onUpdate: NoAction)
+}
+
+model VehicleOption {
+  id                String             @id @default(cuid()) @db.VarChar(30)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  option            String
+  hasOption         Boolean            @default(true)
+  vehicleId         String?            @map("vehicle") @db.VarChar(30)
+  order             Int?
+  vehicle           Vehicle?           @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  vehicleOptionTags VehicleOptionTag[]
+}
+
+model VehicleOptionTag {
+  id              String               @id @default(cuid()) @db.VarChar(30)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  tag             VehicleOptionTagEnum
+  vehicleOptionId String?              @map("vehicleOption") @db.VarChar(30)
+  vehicleOption   VehicleOption?       @relation(fields: [vehicleOptionId], references: [id], onUpdate: NoAction)
+}
+
+model VehiclePrice {
+  id        String               @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  price     Int
+  priceType VehiclePriceTypeEnum
+  userId    String?              @map("user") @db.VarChar(30)
+  vehicleId String?              @map("vehicle") @db.VarChar(30)
+  startDate DateTime?
+  endDate   DateTime?
+  user      User?                @relation(fields: [userId], references: [id], onUpdate: NoAction)
+  vehicle   Vehicle?             @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+}
+
+model VehicleRecon {
+  id             String           @id @default(cuid()) @db.VarChar(30)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  chargedDate    DateTime
+  type           String?
+  vendorName     String?
+  amount         Int
+  description    String?
+  vehicleId      String?          @map("vehicle") @db.VarChar(30)
+  vendorId       String?          @map("vendor") @db.VarChar(30)
+  bankLinkId     String?          @unique @map("bankLink") @db.VarChar(30)
+  accountingType String?
+  bankLink       TransactionItem? @relation(fields: [bankLinkId], references: [id], onUpdate: NoAction)
+  vehicle        Vehicle?         @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+  vendor         Vendor?          @relation(fields: [vendorId], references: [id], onUpdate: NoAction)
+}
+
+model VehicleTaxPolicy {
+  id          String   @id @default(cuid()) @db.VarChar(30)
+  type        String
+  name        String
+  displayName String
+  formula     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  storeId     String?  @map("store") @db.VarChar(30)
+  store       Store?   @relation(fields: [storeId], references: [id], onUpdate: NoAction)
+}
+
+model VehicleVideo {
+  id        String                 @id @default(cuid()) @db.VarChar(30)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  raw       String?
+  high      String?
+  medium    String?
+  low       String?
+  embed     String?
+  label     String?
+  vehicleId String?                @map("vehicle") @db.VarChar(30)
+  videoType VehicleVideoTypeEnum[] @map("videoType")
+  vehicle   Vehicle?               @relation(fields: [vehicleId], references: [id], onUpdate: NoAction)
+}
+
+model Vendor {
+  id                              String                                      @id @default(cuid()) @db.VarChar(30)
+  createdAt                       DateTime                                    @default(now())
+  updatedAt                       DateTime                                    @updatedAt
+  name                            String
+  email                           String?
+  contactName                     String?
+  dealershipId                    String?                                     @map("dealership") @db.VarChar(30)
+  defaultAccountingType           String?
+  defaultTransactionItemBelongsTo RolesEnum[]                                 @map("defaultTransactionItemBelongsTo")
+  dealership                      Dealership?                                 @relation(fields: [dealershipId], references: [id], onUpdate: NoAction)
+  addresses                       Address[]
+  bridgeToAccountTransactions     BridgeAccountTransactionToTransactionItem[]
+  phoneNumbers                    PhoneNumber[]
+  transactions                    TransactionItem[]
+  VehicleBoughtFrom               VehicleBoughtFrom[]
+  recon                           VehicleRecon[]
+}
+
+model WebUpdate {
+  id         String      @id @default(cuid()) @db.VarChar(30)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  image      String
+  updateDate DateTime
+  imageCover String?
+  text       String
+  updateType String
+  href       String
+  dealerId   String?     @map("dealer") @db.VarChar(30)
+  dealer     Dealership? @relation(fields: [dealerId], references: [id], onUpdate: NoAction)
+}
+
+enum AddressTypeEnum {
+  Billing
+  Mailing
+  Shipping
+  Registering
+  Physical
+  Only
+}
+
+enum CustomVehicleSearchNotificationOptionsEnum {
+  PRICE_DROP
+  NEW_INVENTORY
+}
+
+enum DealActionForEnum {
+  CUSTOMER
+  DEALER
+  SHOP
+  FINANCE
+  SALES
+}
+
+enum DealStatusEnum {
+  Offer
+  Closed
+  Accepted
+  Pre_Delivery
+  Ready_For_Delivery
+  Delivered
+  Completed
+  Unwound
+}
+
+enum DealTaskIsForEnum {
+  CUSTOMER
+  DEALER
+}
+
+enum DealershipIntegrationTypeEnum {
+  Auction
+  VehicleHistoryReport
+  Chat
+  Email
+}
+
+enum EmailTypeEnum {
+  Login
+  Current
+  Old
+}
+
+enum EventEnum {
+  RECON
+  SALES
+  TITLE
+  FINANCING
+  SHIPPING
+  OFFERS
+}
+
+enum FileTagEnum {
+  Signature
+  FullNameSignature
+  Initials
+  Doc
+  Vehicle
+  Deal
+  User
+  Store
+  Image
+}
+
+enum NotificationMethodEnum {
+  IN_APP
+  SMS
+  PUSH
+  EMAIL
+}
+
+enum RolesEnum {
+  SUPER_ADMIN
+  DEALERSHIP_ADMIN
+  MANAGER
+  RECON
+  RECON_MANAGER
+  EMPLOYEE
+  ALLDEALERSHIP
+  BUYER
+  LEAD
+  PUBLIC
+}
+
+enum SideEffectsEnum {
+  AddLineItems
+  UpdateDealStatus
+  MakeActionsActionable
+  TogglePayment
+  ToggleDelivery
+}
+
+enum SignerTagEnum {
+  Buyer
+  Business
+  Borrower
+  Cosigner
+}
+
+enum StateEnum {
+  AK
+  AL
+  AR
+  AZ
+  CA
+  CO
+  CT
+  DE
+  FL
+  GA
+  HI
+  IA
+  ID
+  IL
+  IN
+  KS
+  KY
+  LA
+  MA
+  MD
+  ME
+  MI
+  MN
+  MO
+  MS
+  MT
+  NC
+  ND
+  NE
+  NH
+  NJ
+  NM
+  NV
+  NY
+  OH
+  OK
+  OR
+  PA
+  RI
+  SC
+  SD
+  TN
+  TX
+  UT
+  VA
+  VT
+  WA
+  WI
+  WV
+  WY
+  XX
+}
+
+enum TitleHistoryEnum {
+  Theft
+  Lemon_Law
+  Salvage
+  TMU
+  Flood
+  Burn
+  Accident
+  Total_Loss
+}
+
+enum VehicleTypeEnum {
+  Car
+  Sedan
+  Coupe
+  Wagon
+  Crossover
+  SUV
+  Van
+  Mini_Van
+  Commercial
+  Sports_Car
+  Exotic
+  Truck
+  Trailer
+  Large_Crew_Cab
+  Crew_Cab
+  Regular_Cab
+  Extended_Cab
+  Highlight
+  Demo
+  Commercial_Truck
+  Dual_Rear_Wheel
+}
+
+enum VehicleVideoTypeEnum {
+  Sale
+  Private
+  Inspection
+  Delivery
+  Arrival
+}
+
+enum DocTypeEnum {
+  SIGN
+  IMAGEUPLOAD
+}
+
+enum DocIsForEnum {
+  DEAL
+  VEHICLE
+  ADDON
+  SIGNER
+  EACH_SIGNER_EACH_VEHICLE
+}
+
+enum FuelEnum {
+  Gas
+  Diesel
+  Gas_Hybrid
+  Electric
+  Diesel_Hybrid
+}
+
+enum VehicleMileageEnum {
+  Actual
+  TMU
+  Exempt
+}
+
+enum VehicleStatusEnum {
+  For_Sale
+  Not_For_Sale
+  Not_Delivered
+  Recon
+  Ready_For_Sale
+  Sale_Pending
+  Sold
+  Delivered
+  Unwound
+}
+
+enum DrivelineEnum {
+  RWD
+  FWD
+  AWD
+  FOUR_BY_FOUR
+}
+
+enum VehicleTitleEnum {
+  Clean
+  Salvage
+  Restored
+  Lemon
+  Dismantle
+}
+
+enum TransmissionEnum {
+  Auto
+  Manual
+  DCT
+  CVT
+}
+
+enum FileTypeEnum {
+  ImageCutoutOriginal
+  ImageCutoutLarge
+  ImageCutoutMedium
+  ImageCutoutSmall
+  ImageOriginal
+  ImageLarge
+  ImageMedium
+  ImageSmall
+  ImageThumb
+  Image
+  Cloudinary
+  HTML
+  PDF
+}
+
+enum OfferTypeEnum {
+  Customer_Offer
+  Dealer_Counteroffer
+  Customer_Counteroffer
+  Customer_Final_Offer
+  Dealer_Final_Offer
+  Dealer_Accept
+  Customer_Accept
+  Dealer_Decline
+  Customer_Decline
+  Lowball
+  Lowball_Decline
+}
+
+enum DealDeliveryType {
+  Pickup
+  Ship
+  Unsure
+}
+
+enum DealTypeEnum {
+  RETAIL
+  WHOLESALE
+}
+
+enum VehicleDateTypeEnum {
+  Bought
+  Arrived
+  Title_Received
+  For_Sale
+  Sold
+  Delivered
+  Unwound
+  No_Longer_For_Sale
+}
+
+enum VehicleImageTagEnum {
+  As_Purchased
+  Cutout
+  Hero
+  Highlight
+  Entertainment
+  Option
+  Aftermarket
+  Damage
+  Caution
+  Interior
+  Exterior
+  Engine
+  Undercarriage
+  Wheels_And_Tires
+}
+
+enum VehicleOptionTagEnum {
+  High_Value
+  Engine
+  Engine_Spec
+  Transmission
+  Transmission_Spec
+  Drivetrain
+  Drivetrain_Spec
+  Package
+  Aftermarket
+  Interior
+  Exterior
+  Steering
+  Safety
+  Entertainment
+  Comfort
+  Seats
+  Cargo
+  Towing
+  Wheels_and_Tires
+  Roof
+}
+
+enum LedgerTypeEnum {
+  RECEIVABLE
+  PAYMENT
+}
+
+enum DealLineItemTypeEnum {
+  STATE_FEE
+  VEHICLE
+  TAX
+  FEE
+  SERVICE
+  PART
+  TRADEIN
+  CUSTOMERCREDIT
+  DEPOSIT
+  PAYMENT
+  SHIPPING
+  LABOR
+}
+
+enum PhoneNumberTypeEnum {
+  Mobile
+  Business
+  Home
+}
+
+enum EmailSubscriptionTypeEnum {
+  BLOG
+  NEW_INVENTORY
+}
+
+enum DealTaskStatusEnum {
+  DELETED
+  READY
+  UPCOMING
+  COMPLETED
+  CALENDAR
+}
+
+enum VehiclePriceTypeEnum {
+  Asking
+  Lowball
+  Estimated_Sale
+  Recon_Budget
+  Purchase
+  Sale
+  Recon
+  Retargeting_Sale
+}
+
+enum VehicleBoughtFromEnum {
+  Auction
+  Trade
+  Private
+}
+
+enum OwnerEnum {
+  Buyer
+  Shipper
+  Dealer
+  Insurance
+  Finance
+  Vendor
+}
+
+enum CustomerUIEnum {
+  PAYMENT
+  SHIPPING
+  ADD_ONS
+  APPOINTMENTS
+  SIGNERS
+  GENERIC
+  DOCUMENTS
+  DEPOSIT
+  NONE
+}
+
+enum DealerUIEnum {
+  PAYMENT
+  DEPOSIT
+  SHIPPING
+  ADD_ONS
+  APPOINTMENTS
+  SIGNERS
+  GENERIC
+  DOCUMENTS
+  SHOP
+}
+
+enum AccessControlEnum {
+  GATE
 }
